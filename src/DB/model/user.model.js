@@ -24,7 +24,9 @@ const userSchema = new mongoose.Schema(
       default: roleEnum.User,
     },
     confirmEmail: Date,
-    profilePic: String,
+    profilePicture: String,
+    coverProfilePictures: [String],
+    changeCredentialsTime: Date,
   },
   {
     collection: "Route_users",

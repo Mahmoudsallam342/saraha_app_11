@@ -4,6 +4,7 @@ import { DBConnection } from "./DB/index.js";
 import { authRouter } from "./modules/index.js";
 import express from "express";
 import { userRouter } from "./modules/user/index.js";
+import { resolve } from "node:path";
 
 async function bootstrap() {
   //! url
@@ -15,6 +16,8 @@ async function bootstrap() {
   await DBConnection();
   //convert buffer data
   app.use(express.json());
+  app.use("/uploads", express.static(resolve("./uploads")));
+
   //application routing
   app.get("/", (req, res) => res.send("Hello World!"));
   app.use("/auth", authRouter);

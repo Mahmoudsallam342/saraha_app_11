@@ -11,11 +11,13 @@ import { AudienceEnum, TokenTypeEnum } from "../../enum/security,enum.js";
 import { roleEnum } from "../../enum/user.enum.js";
 import {
   BadRequestException,
+  NotFoundException,
   UnauthorizedException,
 } from "../response/error.response.js";
 import { findOne } from "../../../DB/database.service.js";
 
 import { UserModel } from "../../../DB/index.js";
+import { randomUUID } from "node:crypto";
 export const generateToken = async ({
   payload = {},
   secret = USER_TOKEN_SECRET_KEY,
@@ -71,6 +73,7 @@ export const getSignatureLevel = async (audienceType) => {
 export const createLoginCredentials = async (user, issuer) => {
   const { accessSignature, refreshSignature, audience } =
     await getTokenSignature(user.role);
+  const jwtid = randomUUID();
   const accessToken = await generateToken({
     payload: { sub: user._id },
     secret: accessSignature,
@@ -78,6 +81,7 @@ export const createLoginCredentials = async (user, issuer) => {
       issuer,
       audience: [TokenTypeEnum.access, audience],
       expiresIn: ACCESS_EXPIRES_IN,
+      jwtid,
     },
   });
   const refreshToken = await generateToken({
@@ -87,6 +91,7 @@ export const createLoginCredentials = async (user, issuer) => {
       issuer,
       audience: [TokenTypeEnum.refresh, audience],
       expiresIn: REFRESH_EXPIRES_IN,
+      jwtid,
     },
   });
   return { accessToken, refreshToken };
@@ -122,6 +127,12 @@ export const decodeToken = async ({
   });
   if (!user) {
     throw new UnauthorizedException({ message: "Not Register account" });
+  }
+  if (
+    user.changeCredentialsTime &&
+    user.changeCredentialsTime?.getTime() >= decode.iat * 1000
+  ) {
+    throw NotFoundException({ message: "invalid login session" });
   }
   return user;
 };
